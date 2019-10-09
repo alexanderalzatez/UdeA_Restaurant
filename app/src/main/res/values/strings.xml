@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">UdeA_Restaurant</string>
     <string name="title_activity_maps">Map</string>
+    <string name="ingrese_la_direcci_n_de_origen">Ingrese la dirección de origen</string>
+    <string name="ingrese_la_direcci_n_de_destino">Ingrese la dirección de destino</string>
+    <string name="buscar_ruta">Buscar Ruta</string>
 </resources>

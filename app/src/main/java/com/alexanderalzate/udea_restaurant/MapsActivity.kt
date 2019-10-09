@@ -3,6 +3,8 @@ package com.alexanderalzate.udea_restaurant
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.os.AsyncTask
 import android.os.Bundle
@@ -17,8 +19,10 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.gson.Gson
+import kotlinx.android.synthetic.main.activity_maps.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener {
@@ -80,12 +84,51 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         map.addMarker(MarkerOptions().position(latLngDestination).title("Puerta del norte").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
         map.addMarker(MarkerOptions().position(latLngOrigin).title("Universidad de Antioquia").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
         //map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLngOrigin, 12f))
+        bn_Buscar.setOnClickListener {
+
+            var geocoder = Geocoder(this)
+            var ubicacionOrigen = atv_Origen.text.toString()
+            var ubicacionDestino = atv_Destino.text.toString()
+
+            //  var ubicacion = "Cra 2B N 19-04 Campestre B Dosquebradas Risaralda"
+            lateinit var listOrigen : MutableList<Address>
+            lateinit var listDestino : MutableList<Address>
 
 
+            try {
+                listOrigen = geocoder.getFromLocationName(ubicacionOrigen,1)
+                listDestino = geocoder.getFromLocationName(ubicacionDestino,1)
+
+            }catch (e: IOException){
+
+            }
+            if (listOrigen.size > 0 && listDestino.size>0) {
+
+                var addressOrigen = listOrigen.get(0)
+                var addressDestino = listDestino.get(0)
+                var positionOrigen = LatLng(addressOrigen.latitude, addressOrigen.longitude)
+                var positionDestino = LatLng(addressDestino.latitude, addressDestino.longitude)
+                var markerOrigen = MarkerOptions().title(ubicacionOrigen).position(positionOrigen)
+                var markerDestino = MarkerOptions().title(ubicacionDestino).position(positionDestino)
+                map.addMarker(markerOrigen)
+                map.moveCamera(
+                    CameraUpdateFactory.newLatLngZoom(positionOrigen, 15F)
+                )
+                map.addMarker(markerDestino)
+                map.moveCamera(
+                    CameraUpdateFactory.newLatLngZoom(positionDestino, 15F)
+                )
+                val URL = getDirectionURL(positionOrigen,positionDestino)
+                GetDirection(URL).execute()
+            } else
+                Toast.makeText(this, "Direccion no encontrada", Toast.LENGTH_SHORT).show()
+
+        }
 
 
         val URL = getDirectionURL(latLngOrigin,latLngDestination)
         GetDirection(URL).execute()
+
 
     }
 
@@ -113,10 +156,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 val path = ArrayList<LatLng>()
 
                 for(i in 0..(respObj.routes[0].legs[0].steps.size-1)){
-                    //val startLatLng = LatLng(respObj.routes[0].legs[0].steps[i].start_location.lat.toDouble(),respObj.routes[0].legs[0].steps[i].start_location.lng.toDouble())
-                    //path.add(startLatLng)
-                    //val endLatLng = LatLng(respObj.routes[0].legs[0].steps[i].end_location.lat.toDouble(),respObj.routes[0].legs[0].steps[i].end_location.lng.toDouble())
-                    //
                     path.addAll(decodePolyline(respObj.routes[0].legs[0].steps[i].polyline.points))
                 }
                 result.add(path)
@@ -140,7 +179,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         }
 
     }
-    public fun decodePolyline(encoded: String): List<LatLng> {
+
+    fun decodePolyline(encoded: String): List<LatLng> {
 
         val poly = ArrayList<LatLng>()
         var index = 0
